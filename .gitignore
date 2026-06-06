@@ -1,0 +1,12 @@
+# Arquivos compilados
+target/
+
+# Banco de dados gerado em runtime
+*.mv.db
+*.trace.db
+
+# Arquivos do VSCode
+.vscode/
+
+# Arquivos do Maven
+fontes.txt
