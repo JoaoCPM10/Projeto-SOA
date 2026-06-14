@@ -66,7 +66,7 @@ public class Main {
 
         // Testando Reserva
         Espaco espacoTeste = new Espaco(1, "Churrasqueira 1", TipoEspaco.CHURRASQUEIRA, 30);
-        Reserva reserva = new Reserva(0, "123.456.789-00", espacoTeste, intervalo1, StatusReserva.CONFIRMADA);
+        Reserva reserva = new Reserva(0, "123.456.789-00", "Jhon Doe", espacoTeste, intervalo1, StatusReserva.CONFIRMADA);
         System.out.println("Reserva criada: " + reserva);
         System.out.println("Reserva está ativa? " + reserva.isAtiva()); // true
         reserva.cancelar();
@@ -108,7 +108,7 @@ public class Main {
             new DataReserva(20, 6, 2026),
             new DataReserva(20, 6, 2026)
         );
-        Reserva novaReserva = new Reserva(0, "111.222.333-44", espacoBanco, periodo, StatusReserva.CONFIRMADA);
+        Reserva novaReserva = new Reserva(0, "111.222.333-44", "John Doe", espacoBanco, periodo, StatusReserva.CONFIRMADA);
         reservaRepo.save(novaReserva);
         System.out.println("Reserva salva com id gerado pelo banco: " + novaReserva.getId());
 
@@ -130,13 +130,13 @@ public class Main {
 
         // Deve funcionar
         IntervaloDatas periodo1 = new IntervaloDatas(new DataReserva(1, 7, 2026), new DataReserva(1, 7, 2026));
-        System.out.println(reservaService.reservar("111.222.333-44", 1, periodo1));
+        System.out.println(reservaService.reservar("111.222.333-44", "John Doe", 1, periodo1));
 
         // Deve dar conflito (mesmo espaço e período)
-        System.out.println(reservaService.reservar("999.888.777-66", 1, periodo1));
+        System.out.println(reservaService.reservar("999.888.777-66", "Jane Smith", 1, periodo1));
 
         // Deve dar erro de CPF inválido
-        System.out.println(reservaService.reservar("cpf-errado", 1, periodo1));
+        System.out.println(reservaService.reservar("cpf-errado", "Invalid User", 1, periodo1));
 
         System.out.println("\n========================================");
         System.out.println("  TESTE 4: ConsultaDisponibilidadeService");

@@ -1,6 +1,7 @@
 package com.condominio.repository;
 
 import com.condominio.enums.StatusReserva;
+import com.condominio.model.DataReserva;
 import com.condominio.model.Espaco;
 import com.condominio.model.IntervaloDatas;
 import com.condominio.model.Reserva;
@@ -23,4 +24,10 @@ public interface ReservaRepository {
 
     // Atualiza o status de uma lista de reservas (ex: concluir reservas passadas)
     void atualizarStatus(List<Long> ids, StatusReserva novoStatus);
+
+    // Retorna reservas confirmadas cujo fim já passou da data informada
+    List<Reserva> findConfirmadasComFimAntes(DataReserva data);
+
+    // Cancela uma reserva pelo id
+    void cancelar(long id);
 }

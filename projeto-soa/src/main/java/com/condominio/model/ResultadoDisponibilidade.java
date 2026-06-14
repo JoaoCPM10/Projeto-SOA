@@ -14,9 +14,7 @@ public class ResultadoDisponibilidade {
 
     @Override
     public String toString() {
-        return String.format("Espaco: %s | Status: %s", espaco.getNome(), status);
-    }
-
-    public Espaco getEspaco()        { return espaco; }
-    public StatusEspaco getStatus()  { return status; }
+        return String.format("Espaco: %d - %s | Status: %s",
+           espaco.getId(), espaco.getNome(), status);
+}
 }

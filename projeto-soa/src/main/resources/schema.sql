@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS espaco (
 CREATE TABLE IF NOT EXISTS reserva (
     id           BIGINT PRIMARY KEY AUTO_INCREMENT,
     cpf_morador  VARCHAR(14)  NOT NULL,
+    nome_morador VARCHAR(100) NOT NULL,
     espaco_id    INT          NOT NULL,
     inicio_dia   INT          NOT NULL,
     inicio_mes   INT          NOT NULL,

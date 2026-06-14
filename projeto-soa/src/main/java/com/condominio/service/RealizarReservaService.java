@@ -22,7 +22,7 @@ public class RealizarReservaService {
     }
 
     // Método principal: tenta realizar uma reserva e retorna o resultado
-    public ResultadoReserva reservar(String cpf, int espacoId, IntervaloDatas intervalo) {
+    public ResultadoReserva reservar(String cpf, String nome, int espacoId, IntervaloDatas intervalo) {
 
         // Passo 1: valida o CPF
         if (!cpfValido(cpf)) {
@@ -46,7 +46,7 @@ public class RealizarReservaService {
         }
 
         // Passo 5: cria e salva a reserva
-        Reserva novaReserva = new Reserva(0, cpf, espaco, intervalo, StatusReserva.CONFIRMADA);
+        Reserva novaReserva = new Reserva(0, cpf, nome, espaco, intervalo, StatusReserva.CONFIRMADA);
         reservaRepo.save(novaReserva);
 
         // Passo 6: retorna sucesso com a reserva criada

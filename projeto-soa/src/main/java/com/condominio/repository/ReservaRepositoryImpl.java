@@ -27,22 +27,23 @@ public class ReservaRepositoryImpl implements ReservaRepository {
     @Override
     public Reserva save(Reserva reserva) {
         String sql = "INSERT INTO reserva " +
-                     "(cpf_morador, espaco_id, inicio_dia, inicio_mes, inicio_ano, " +
+                     "(cpf_morador, nome_morador, espaco_id, inicio_dia, inicio_mes, inicio_ano, " +
                      "fim_dia, fim_mes, fim_ano, status) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
             PreparedStatement stmt = conexao.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             stmt.setString(1, reserva.getCpfMorador());
-            stmt.setInt   (2, reserva.getEspaco().getId());
-            stmt.setInt   (3, reserva.getPeriodo().getInicio().getDia());
-            stmt.setInt   (4, reserva.getPeriodo().getInicio().getMes());
-            stmt.setInt   (5, reserva.getPeriodo().getInicio().getAno());
-            stmt.setInt   (6, reserva.getPeriodo().getFim().getDia());
-            stmt.setInt   (7, reserva.getPeriodo().getFim().getMes());
-            stmt.setInt   (8, reserva.getPeriodo().getFim().getAno());
-            stmt.setString(9, reserva.getStatus().name());
+            stmt.setString(2, reserva.getNomeMorador());
+            stmt.setInt   (3, reserva.getEspaco().getId());
+            stmt.setInt   (4, reserva.getPeriodo().getInicio().getDia());
+            stmt.setInt   (5, reserva.getPeriodo().getInicio().getMes());
+            stmt.setInt   (6, reserva.getPeriodo().getInicio().getAno());
+            stmt.setInt   (7, reserva.getPeriodo().getFim().getDia());
+            stmt.setInt   (8, reserva.getPeriodo().getFim().getMes());
+            stmt.setInt   (9, reserva.getPeriodo().getFim().getAno());
+            stmt.setString(10, reserva.getStatus().name());
 
             stmt.executeUpdate();
 
@@ -197,9 +198,49 @@ public class ReservaRepositoryImpl implements ReservaRepository {
         return new Reserva(
             rs.getLong("id"),
             rs.getString("cpf_morador"),
+            rs.getString("nome_morador"),
             espaco,
             new IntervaloDatas(inicio, fim),
             StatusReserva.valueOf(rs.getString("status"))
         );
+    }
+
+    @Override
+    public List<Reserva> findConfirmadasComFimAntes(DataReserva data) {
+        List<Reserva> lista = new ArrayList<>();
+
+        // Busca reservas confirmadas cujo fim é anterior à data informada
+        String sql = "SELECT * FROM reserva WHERE status = 'CONFIRMADA' " +
+                    "AND (fim_ano * 10000 + fim_mes * 100 + fim_dia) " +
+                    "  < (? * 10000 + ? * 100 + ?)";
+
+        try {
+            PreparedStatement stmt = conexao.prepareStatement(sql);
+            stmt.setInt(1, data.getAno());
+            stmt.setInt(2, data.getMes());
+            stmt.setInt(3, data.getDia());
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                lista.add(mapearReserva(rs));
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar reservas para concluir: " + e.getMessage(), e);
+        }
+
+        return lista;
+    }
+
+    @Override
+    public void cancelar(long id) {
+        String sql = "UPDATE reserva SET status = 'CANCELADA' WHERE id = ?";
+        try {
+            PreparedStatement stmt = conexao.prepareStatement(sql);
+            stmt.setLong(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao cancelar reserva: " + e.getMessage(), e);
+        }
     }
 }

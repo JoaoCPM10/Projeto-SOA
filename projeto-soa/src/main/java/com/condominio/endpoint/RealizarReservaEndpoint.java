@@ -17,6 +17,7 @@ public class RealizarReservaEndpoint {
     @WebMethod(operationName = "realizarReserva")
     public String realizarReserva(
             @WebParam(name = "cpf")         String cpf,
+            @WebParam(name = "nome")        String nome,
             @WebParam(name = "espacoId")    int espacoId,
             @WebParam(name = "inicioDia")   int inicioDia,
             @WebParam(name = "inicioMes")   int inicioMes,
@@ -30,7 +31,7 @@ public class RealizarReservaEndpoint {
             new DataReserva(fimDia, fimMes, fimAno)
         );
 
-        ResultadoReserva resultado = service.reservar(cpf, espacoId, intervalo);
+        ResultadoReserva resultado = service.reservar(cpf, nome, espacoId, intervalo);
         return resultado.toString();
     }
 }

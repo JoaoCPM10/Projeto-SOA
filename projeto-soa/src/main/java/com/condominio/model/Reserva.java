@@ -6,13 +6,15 @@ public class Reserva {
 
     private long id;
     private String cpfMorador;
+    private String nomeMorador;
     private Espaco espaco;
     private IntervaloDatas periodo;
     private StatusReserva status;
 
-    public Reserva(long id, String cpfMorador, Espaco espaco, IntervaloDatas periodo, StatusReserva status) {
+    public Reserva(long id, String cpfMorador, String nomeMorador, Espaco espaco, IntervaloDatas periodo, StatusReserva status) {
         this.id          = id;
         this.cpfMorador  = cpfMorador;
+        this.nomeMorador = nomeMorador;
         this.espaco      = espaco;
         this.periodo     = periodo;
         this.status      = status;
@@ -47,12 +49,13 @@ public class Reserva {
 
     @Override
     public String toString() {
-        return String.format("Reserva{id=%d, cpf='%s', espaco='%s', periodo=%s, status=%s}",
-                id, cpfMorador, espaco.getNome(), periodo.toString(), status);
+        return String.format("Reserva{id=%d, cpf='%s', nome='%s', espaco='%s', periodo=%s, status=%s}",
+                id, cpfMorador, nomeMorador, espaco.getNome(), periodo.toString(), status);
     }
 
     public long getId()                  { return id;         }
     public String getCpfMorador()        { return cpfMorador; }
+    public String getNomeMorador()       { return nomeMorador; }
     public Espaco getEspaco()            { return espaco;     }
     public IntervaloDatas getPeriodo()   { return periodo;    }
     public StatusReserva getStatus()     { return status;     }
