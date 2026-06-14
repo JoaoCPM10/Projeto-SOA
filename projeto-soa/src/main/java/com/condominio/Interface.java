@@ -61,13 +61,20 @@ public class Interface extends JFrame {
         if (iAno < 2000 || fAno < 2000) {
             return "ERRO: Ano inválido. Use um ano a partir de 2000.";
         }
-
+        
+        LocalDate hoje = LocalDate.now();   
+        int dataHoje     = hoje.getYear() * 10000 + hoje.getMonthValue() * 100 + hoje.getDayOfMonth();
         int dataInicio = iAno * 10000 + iMes * 100 + iDia;
         int dataFim    = fAno * 10000 + fMes * 100 + fDia;
+
+        if (dataInicio < dataHoje) {
+            return "ERRO: A data de início não pode ser anterior à data atual.";
+        }
 
         if (dataFim < dataInicio) {
             return "ERRO: A data de fim não pode ser anterior à data de início.";
         }
+
 
         return null;
     }
