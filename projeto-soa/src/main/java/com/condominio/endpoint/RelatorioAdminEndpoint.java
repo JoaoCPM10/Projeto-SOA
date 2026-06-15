@@ -31,4 +31,10 @@ public class RelatorioAdminEndpoint {
         ResultadoRelatorio resultado = service.gerar(intervalo);
         return resultado.toString();
     }
+
+    @WebMethod(operationName = "gerarRelatorioCompleto")
+    public String gerarRelatorioCompleto() {
+        ResultadoRelatorio resultado = service.gerarCompleto();
+        return resultado.toString();
+    }
 }

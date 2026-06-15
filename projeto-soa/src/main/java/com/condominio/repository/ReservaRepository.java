@@ -13,6 +13,9 @@ public interface ReservaRepository {
     // Salva uma nova reserva no banco e retorna ela com o id gerado
     Reserva save(Reserva reserva);
 
+    
+    List<Reserva> findTodas();
+
     // Retorna todas as reservas ativas de um espaço específico
     List<Reserva> findByEspaco(Espaco espaco);
 

@@ -15,6 +15,11 @@ public class RelatorioAdminService {
         this.reservaRepo = new ReservaRepositoryImpl();
     }
 
+    public ResultadoRelatorio gerarCompleto() {
+        List<Reserva> reservas = reservaRepo.findTodas();
+        return ResultadoRelatorio.sucesso(reservas);
+    }
+
     // Método principal: retorna todas as reservas de todos os moradores no intervalo
     public ResultadoRelatorio gerar(IntervaloDatas intervalo) {
 

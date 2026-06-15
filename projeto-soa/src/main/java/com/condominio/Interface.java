@@ -428,7 +428,7 @@ public class Interface extends JFrame {
         JPanel painel = new JPanel(new BorderLayout(10, 10));
         painel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel campos = new JPanel(new GridLayout(3, 4, 5, 5));
+        JPanel campos = new JPanel(new GridLayout(4, 4, 5, 5));
 
         campos.add(new JLabel("Início (dia/mês/ano):"));
         JTextField inicioDia = new JTextField();
@@ -446,8 +446,16 @@ public class Interface extends JFrame {
         campos.add(fimMes);
         campos.add(fimAno);
 
-        JButton btnGerar = new JButton("Gerar Relatório");
-        campos.add(btnGerar);
+        // Linha 3: botões
+        JButton btnPeriodo = new JButton("Buscar por Período");
+        JButton btnTodas   = new JButton("Todas até Hoje");
+        campos.add(btnPeriodo);
+        campos.add(btnTodas);
+        campos.add(new JLabel());
+        campos.add(new JLabel());
+
+        // Linha 4: legenda
+        campos.add(new JLabel("* 'Todas até Hoje' ignora as datas acima."));
         campos.add(new JLabel());
         campos.add(new JLabel());
         campos.add(new JLabel());
@@ -461,7 +469,8 @@ public class Interface extends JFrame {
         resultado.setFont(new Font("Monospaced", Font.PLAIN, 12));
         JScrollPane scroll = new JScrollPane(resultado);
 
-        btnGerar.addActionListener(e -> {
+            // Buscar por período
+        btnPeriodo.addActionListener(e -> {
             String erroData = validarDatas(
                 inicioDia.getText(), inicioMes.getText(), inicioAno.getText(),
                 fimDia.getText(),    fimMes.getText(),    fimAno.getText()
@@ -470,24 +479,45 @@ public class Interface extends JFrame {
                 resultado.setText(erroData);
                 return;
             }
-            try {
-                String resposta = chamarServico(
-                    BASE + "relatorio?wsdl",
-                    "RelatorioAdminService",
-                    "gerarRelatorio",
-                    new Object[]{
-                        Integer.parseInt(inicioDia.getText()),
-                        Integer.parseInt(inicioMes.getText()),
-                        Integer.parseInt(inicioAno.getText()),
-                        Integer.parseInt(fimDia.getText()),
-                        Integer.parseInt(fimMes.getText()),
-                        Integer.parseInt(fimAno.getText())
-                    }
-                );
-                resultado.setText(resposta);
-            } catch (Exception ex) {
-                resultado.setText("ERRO: " + ex.getMessage());
-            }
+            resultado.setText("Carregando...");
+            new Thread(() -> {
+                try {
+                    String resposta = chamarServico(
+                        BASE + "relatorio?wsdl",
+                        "RelatorioAdminService",
+                        "gerarRelatorio",
+                        new Object[]{
+                            Integer.parseInt(inicioDia.getText()),
+                            Integer.parseInt(inicioMes.getText()),
+                            Integer.parseInt(inicioAno.getText()),
+                            Integer.parseInt(fimDia.getText()),
+                            Integer.parseInt(fimMes.getText()),
+                            Integer.parseInt(fimAno.getText())
+                        }
+                    );
+                    SwingUtilities.invokeLater(() -> resultado.setText(resposta));
+                } catch (Exception ex) {
+                    SwingUtilities.invokeLater(() -> resultado.setText("ERRO: " + ex.getMessage()));
+                }
+            }).start();
+        });
+
+        // Buscar todas até hoje
+        btnTodas.addActionListener(e -> {
+            resultado.setText("Carregando...");
+            new Thread(() -> {
+                try {
+                    String resposta = chamarServico(
+                        BASE + "relatorio?wsdl",
+                        "RelatorioAdminService",
+                        "gerarRelatorioCompleto",
+                        new Object[]{}
+                    );
+                    SwingUtilities.invokeLater(() -> resultado.setText(resposta));
+                } catch (Exception ex) {
+                    SwingUtilities.invokeLater(() -> resultado.setText("ERRO: " + ex.getMessage()));
+                }
+            }).start();
         });
 
         painel.add(campos, BorderLayout.NORTH);
@@ -623,6 +653,8 @@ public class Interface extends JFrame {
                                      "fimDia", "fimMes", "fimAno" };
             case "cancelarReserva":
                 return new String[]{ "cpf", "idReserva" };
+            case "gerarRelatorioCompleto":
+                return new String[]{};
             default:
                 return new String[]{};
         }
