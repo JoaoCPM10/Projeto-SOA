@@ -30,55 +30,76 @@ public class Interface extends JFrame {
         setVisible(true);
     }
 
-    // -------------------------------------------------------
-    // VALIDAÇÕES COMPARTILHADAS
-    // -------------------------------------------------------
-    private String validarDatas(String inicioDia, String inicioMes, String inicioAno,
-                                String fimDia,    String fimMes,    String fimAno) {
-        if (inicioDia.isBlank() || inicioMes.isBlank() || inicioAno.isBlank() ||
-            fimDia.isBlank()    || fimMes.isBlank()    || fimAno.isBlank()) {
-            return "ERRO: Preencha todos os campos de data.";
-        }
-
-        int iDia, iMes, iAno, fDia, fMes, fAno;
-        try {
-            iDia = Integer.parseInt(inicioDia);
-            iMes = Integer.parseInt(inicioMes);
-            iAno = Integer.parseInt(inicioAno);
-            fDia = Integer.parseInt(fimDia);
-            fMes = Integer.parseInt(fimMes);
-            fAno = Integer.parseInt(fimAno);
-        } catch (NumberFormatException e) {
-            return "ERRO: Os campos de data devem conter apenas números.";
-        }
-
-        if (iDia < 1 || iDia > 31 || fDia < 1 || fDia > 31) {
-            return "ERRO: Dia inválido. Use valores entre 1 e 31.";
-        }
-        if (iMes < 1 || iMes > 12 || fMes < 1 || fMes > 12) {
-            return "ERRO: Mês inválido. Use valores entre 1 e 12.";
-        }
-        
-        LocalDate hoje = LocalDate.now();   
-        int dataHoje     = hoje.getYear() * 10000 + hoje.getMonthValue() * 100 + hoje.getDayOfMonth();
-        int dataInicio = iAno * 10000 + iMes * 100 + iDia;
-        int dataFim    = fAno * 10000 + fMes * 100 + fDia;
-        int anoAtual = hoje.getYear();
-
-        if (dataInicio < dataHoje) {
-            return "ERRO: A data de início não pode ser anterior à data atual.";
-        }
-
-        if (dataFim < dataInicio) {
-            return "ERRO: A data de fim não pode ser anterior à data de início.";
-        }
-        if (iAno != anoAtual || fAno != anoAtual) {
-            return "ERRO: Só é permitido realizar reservas para o ano atual (" + anoAtual + ").";
-        }
-
-
-        return null;
+private String validarDatas(String inicioDia, String inicioMes, String inicioAno,
+                            String fimDia,    String fimMes,    String fimAno) {
+    if (inicioDia.isBlank() || inicioMes.isBlank() || inicioAno.isBlank() ||
+        fimDia.isBlank()    || fimMes.isBlank()    || fimAno.isBlank()) {
+        return "ERRO: Preencha todos os campos de data.";
     }
+
+    int iDia, iMes, iAno, fDia, fMes, fAno;
+    try {
+        iDia = Integer.parseInt(inicioDia);
+        iMes = Integer.parseInt(inicioMes);
+        iAno = Integer.parseInt(inicioAno);
+        fDia = Integer.parseInt(fimDia);
+        fMes = Integer.parseInt(fimMes);
+        fAno = Integer.parseInt(fimAno);
+    } catch (NumberFormatException e) {
+        return "ERRO: Os campos de data devem conter apenas números.";
+    }
+
+    if (iMes < 1 || iMes > 12 || fMes < 1 || fMes > 12) {
+        return "ERRO: Mês inválido. Use valores entre 1 e 12.";
+    }
+
+    int anoAtual = LocalDate.now().getYear();
+    if (iAno != anoAtual || fAno != anoAtual) {
+        return "ERRO: Só é permitido realizar reservas para o ano atual (" + anoAtual + ").";
+    }
+
+    // Valida o dia levando em conta o mês e o ano
+    if (!diaValido(iDia, iMes, iAno)) {
+        return "ERRO: Dia " + iDia + " inválido para o mês " + iMes + "/" + iAno + ".";
+    }
+    if (!diaValido(fDia, fMes, fAno)) {
+        return "ERRO: Dia " + fDia + " inválido para o mês " + fMes + "/" + fAno + ".";
+    }
+
+    // Verifica se a data de início não é anterior à data atual
+    LocalDate hoje     = LocalDate.now();
+    int dataHoje       = hoje.getYear() * 10000 + hoje.getMonthValue() * 100 + hoje.getDayOfMonth();
+    int dataInicio     = iAno * 10000 + iMes * 100 + iDia;
+    int dataFim        = fAno * 10000 + fMes * 100 + fDia;
+
+    if (dataInicio < dataHoje) {
+        return "ERRO: A data de início não pode ser anterior à data atual.";
+    }
+
+    if (dataFim < dataInicio) {
+        return "ERRO: A data de fim não pode ser anterior à data de início.";
+    }
+
+    return null;
+}
+
+// Verifica se o dia é válido para o mês e ano informados
+private boolean diaValido(int dia, int mes, int ano) {
+    if (dia < 1) return false;
+    switch (mes) {
+        case 1: case 3: case 5: case 7:
+        case 8: case 10: case 12:
+            return dia <= 31;
+        case 4: case 6: case 9: case 11:
+            return dia <= 30;
+        case 2:
+            // Verifica ano bissexto
+            boolean bissexto = (ano % 4 == 0 && ano % 100 != 0) || (ano % 400 == 0);
+            return dia <= (bissexto ? 29 : 28);
+        default:
+            return false;
+    }
+}
 
     // Preenche os campos de data com a data atual
     private void preencherDataAtual(JTextField dia, JTextField mes, JTextField ano) {
