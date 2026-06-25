@@ -1,10 +1,12 @@
 package com.condominio.service;
 
+import com.condominio.enums.StatusReserva;
 import com.condominio.model.IntervaloDatas;
 import com.condominio.model.Reserva;
 import com.condominio.repository.ReservaRepository;
 import com.condominio.repository.ReservaRepositoryImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RelatorioAdminService {
@@ -15,28 +17,36 @@ public class RelatorioAdminService {
         this.reservaRepo = new ReservaRepositoryImpl();
     }
 
-    public ResultadoRelatorio gerarCompleto() {
-        List<Reserva> reservas = reservaRepo.findTodas();
-        return ResultadoRelatorio.sucesso(reservas);
-    }
-
-    // Método principal: retorna todas as reservas de todos os moradores no intervalo
-    public ResultadoRelatorio gerar(IntervaloDatas intervalo) {
-
-        // Passo 1: valida o intervalo
+    public ResultadoRelatorio gerar(IntervaloDatas intervalo, String status) {
         if (!intervalo.isValido()) {
             return ResultadoRelatorio.erro("Intervalo inválido: a data de início deve ser anterior à data de fim.");
         }
 
-        // Passo 2: busca todas as reservas no intervalo
-        // A ordenação por data já é feita pelo próprio banco no findAll
         List<Reserva> reservas = reservaRepo.findAll(intervalo);
-
-        // Retorna a lista (pode ser vazia se não houver reservas no período)
-        return ResultadoRelatorio.sucesso(reservas);
+        List<Reserva> filtradas = filtrarPorStatus(reservas, status);
+        return ResultadoRelatorio.sucesso(filtradas, status);
     }
 
-    // Classe interna que representa o resultado do relatório
+    public ResultadoRelatorio gerarCompleto(String status) {
+        List<Reserva> reservas = reservaRepo.findTodas();
+        List<Reserva> filtradas = filtrarPorStatus(reservas, status);
+        return ResultadoRelatorio.sucesso(filtradas, status);
+    }
+
+    // Filtra a lista por status. Se status for "TODOS" ou nulo, retorna tudo.
+    private List<Reserva> filtrarPorStatus(List<Reserva> reservas, String status) {
+        if (status == null || status.isBlank() || status.equals("TODOS")) {
+            return reservas;
+        }
+        List<Reserva> filtradas = new ArrayList<>();
+        for (Reserva r : reservas) {
+            if (r.getStatus().name().equals(status)) {
+                filtradas.add(r);
+            }
+        }
+        return filtradas;
+    }
+
     public static class ResultadoRelatorio {
 
         private boolean       sucesso;
@@ -49,10 +59,11 @@ public class RelatorioAdminService {
             this.reservas = reservas;
         }
 
-        public static ResultadoRelatorio sucesso(List<Reserva> reservas) {
+        public static ResultadoRelatorio sucesso(List<Reserva> reservas, String status) {
+            String filtroMsg = (status == null || status.equals("TODOS")) ? "" : " com status " + status;
             String msg = reservas.isEmpty()
-                ? "Nenhuma reserva encontrada para o período informado."
-                : "Relatório gerado com sucesso! " + reservas.size() + " reserva(s) encontrada(s).";
+                ? "Nenhuma reserva encontrada" + filtroMsg + "."
+                : "Relatório gerado com sucesso! " + reservas.size() + " reserva(s) encontrada(s)" + filtroMsg + ".";
             return new ResultadoRelatorio(true, msg, reservas);
         }
 
@@ -68,13 +79,27 @@ public class RelatorioAdminService {
         public String toString() {
             if (!sucesso) return "ERRO: " + mensagem;
 
+            if (reservas == null || reservas.isEmpty()) {
+                return "SUCESSO: " + mensagem;
+            }
+
+            // Agrupa por espaço
+            java.util.Map<String, java.util.List<Reserva>> porEspaco = new java.util.LinkedHashMap<>();
+            for (Reserva r : reservas) {
+                String nomeEspaco = r.getEspaco().getNome();
+                porEspaco.computeIfAbsent(nomeEspaco, k -> new java.util.ArrayList<>()).add(r);
+            }
+
             StringBuilder sb = new StringBuilder();
             sb.append("SUCESSO: ").append(mensagem).append("\n");
-            if (reservas != null) {
-                for (Reserva r : reservas) {
+
+            for (java.util.Map.Entry<String, java.util.List<Reserva>> entry : porEspaco.entrySet()) {
+                sb.append("\n[ ").append(entry.getKey()).append(" ]\n");
+                for (Reserva r : entry.getValue()) {
                     sb.append("  ").append(r).append("\n");
                 }
             }
+
             return sb.toString();
         }
     }

@@ -122,26 +122,29 @@ public class ReservaRepositoryImpl implements ReservaRepository {
     public List<Reserva> findAll(IntervaloDatas intervalo) {
         List<Reserva> lista = new ArrayList<>();
 
-        String sql = "SELECT * FROM reserva ORDER BY inicio_ano, inicio_mes, inicio_dia";
+        String sql = "SELECT * FROM reserva " +
+                    "WHERE (inicio_ano * 10000 + inicio_mes * 100 + inicio_dia) " +
+                    "      >= (? * 10000 + ? * 100 + ?) " +
+                    "AND   (inicio_ano * 10000 + inicio_mes * 100 + inicio_dia) " +
+                    "      <= (? * 10000 + ? * 100 + ?) " +
+                    "ORDER BY inicio_ano, inicio_mes, inicio_dia";
 
         try {
             PreparedStatement stmt = conexao.prepareStatement(sql);
+            stmt.setInt(1, intervalo.getInicio().getAno());
+            stmt.setInt(2, intervalo.getInicio().getMes());
+            stmt.setInt(3, intervalo.getInicio().getDia());
+            stmt.setInt(4, intervalo.getFim().getAno());
+            stmt.setInt(5, intervalo.getFim().getMes());
+            stmt.setInt(6, intervalo.getFim().getDia());
             ResultSet rs = stmt.executeQuery();
 
-            int contador = 0;
             while (rs.next()) {
-                contador++;
-                try {
-                    lista.add(mapearReserva(rs));
-                } catch (Exception ex) {
-                    System.out.println("[DEBUG findAll] Erro ao mapear linha " + contador + ": " + ex.getMessage());
-                }
+                lista.add(mapearReserva(rs));
             }
-            System.out.println("[DEBUG findAll] Total linhas banco: " + contador);
-            System.out.println("[DEBUG findAll] Total mapeadas: " + lista.size());
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar todas as reservas: " + e.getMessage(), e);
+            throw new RuntimeException("Erro ao buscar reservas por período: " + e.getMessage(), e);
         }
 
         return lista;
@@ -150,16 +153,21 @@ public class ReservaRepositoryImpl implements ReservaRepository {
     @Override
     public List<Reserva> findTodas() {
         List<Reserva> lista = new ArrayList<>();
+
         String sql = "SELECT * FROM reserva ORDER BY inicio_ano, inicio_mes, inicio_dia";
+
         try {
             PreparedStatement stmt = conexao.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
+
             while (rs.next()) {
                 lista.add(mapearReserva(rs));
             }
+
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao buscar todas as reservas: " + e.getMessage(), e);
         }
+
         return lista;
     }
 

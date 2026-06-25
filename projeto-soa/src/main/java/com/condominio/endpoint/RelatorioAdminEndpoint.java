@@ -21,20 +21,23 @@ public class RelatorioAdminEndpoint {
             @WebParam(name = "inicioAno") int inicioAno,
             @WebParam(name = "fimDia")    int fimDia,
             @WebParam(name = "fimMes")    int fimMes,
-            @WebParam(name = "fimAno")    int fimAno) {
+            @WebParam(name = "fimAno")    int fimAno,
+            @WebParam(name = "status")    String status) {
 
         IntervaloDatas intervalo = new IntervaloDatas(
             new DataReserva(inicioDia, inicioMes, inicioAno),
             new DataReserva(fimDia, fimMes, fimAno)
         );
 
-        ResultadoRelatorio resultado = service.gerar(intervalo);
+        ResultadoRelatorio resultado = service.gerar(intervalo, status);
         return resultado.toString();
     }
 
     @WebMethod(operationName = "gerarRelatorioCompleto")
-    public String gerarRelatorioCompleto() {
-        ResultadoRelatorio resultado = service.gerarCompleto();
+    public String gerarRelatorioCompleto(
+            @WebParam(name = "status") String status) {
+
+        ResultadoRelatorio resultado = service.gerarCompleto(status);
         return resultado.toString();
     }
 }

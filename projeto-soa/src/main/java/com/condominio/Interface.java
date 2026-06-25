@@ -58,14 +58,12 @@ public class Interface extends JFrame {
         if (iMes < 1 || iMes > 12 || fMes < 1 || fMes > 12) {
             return "ERRO: Mês inválido. Use valores entre 1 e 12.";
         }
-        if (iAno < 2000 || fAno < 2000) {
-            return "ERRO: Ano inválido. Use um ano a partir de 2000.";
-        }
         
         LocalDate hoje = LocalDate.now();   
         int dataHoje     = hoje.getYear() * 10000 + hoje.getMonthValue() * 100 + hoje.getDayOfMonth();
         int dataInicio = iAno * 10000 + iMes * 100 + iDia;
         int dataFim    = fAno * 10000 + fMes * 100 + fDia;
+        int anoAtual = hoje.getYear();
 
         if (dataInicio < dataHoje) {
             return "ERRO: A data de início não pode ser anterior à data atual.";
@@ -73,6 +71,9 @@ public class Interface extends JFrame {
 
         if (dataFim < dataInicio) {
             return "ERRO: A data de fim não pode ser anterior à data de início.";
+        }
+        if (iAno != anoAtual || fAno != anoAtual) {
+            return "ERRO: Só é permitido realizar reservas para o ano atual (" + anoAtual + ").";
         }
 
 
@@ -101,6 +102,54 @@ public class Interface extends JFrame {
         painel.add(operacoes);
         return painel;
     }
+
+    private String filtrarPorStatus(String resposta, String status) {
+    if (status.equals("TODOS")) return resposta;
+
+    // Percorre o texto agrupado por espaço e filtra as linhas de reserva
+    StringBuilder sb = new StringBuilder();
+    String secaoAtual = null;
+    StringBuilder secaoConteudo = new StringBuilder();
+    int totalFiltrado = 0;
+
+    for (String linha : resposta.split("\n")) {
+        if (linha.startsWith("SUCESSO:") || linha.startsWith("ERRO:")) {
+            sb.append(linha).append("\n");
+        } else if (linha.startsWith("[ ")) {
+            // Salva seção anterior se tiver conteúdo
+            if (secaoAtual != null && secaoConteudo.length() > 0) {
+                sb.append(secaoAtual).append("\n");
+                sb.append(secaoConteudo);
+            }
+            secaoAtual = linha;
+            secaoConteudo = new StringBuilder();
+        } else if (linha.trim().startsWith("Reserva{")) {
+            if (linha.contains("status=" + status)) {
+                secaoConteudo.append(linha).append("\n");
+                totalFiltrado++;
+            }
+        }
+    }
+
+    // Salva última seção
+    if (secaoAtual != null && secaoConteudo.length() > 0) {
+        sb.append(secaoAtual).append("\n");
+        sb.append(secaoConteudo);
+    }
+
+    if (totalFiltrado == 0) {
+        return "Nenhuma reserva encontrada com status " + status + ".";
+    }
+
+    // Substitui o contador total pelo filtrado
+    String resultado = sb.toString();
+    resultado = resultado.replaceFirst(
+        "\\d+ reserva\\(s\\) encontrada\\(s\\)\\.",
+        totalFiltrado + " reserva(s) encontrada(s) com status " + status + "."
+    );
+
+    return resultado;
+}
 
     private JPanel criarAbaPortaria() {
         JPanel painel = new JPanel();
@@ -300,6 +349,20 @@ public class Interface extends JFrame {
                     resultado.setText("ERRO: Selecione um espaço válido.");
                     return;
                 }
+
+                int confirmacao = JOptionPane.showConfirmDialog(
+                    painel,
+                    "Confirmar reserva?\n\n" +
+                    "CPF: " + cpf.getText() + "\n" +
+                    "Nome: " + nome.getText() + "\n" +
+                    "Espaço: " + espacoCombo.getSelectedItem() + "\n" +
+                    "Período: " + inicioDia.getText() + "/" + inicioMes.getText() + "/" + inicioAno.getText() +
+                    " até " + fimDia.getText() + "/" + fimMes.getText() + "/" + fimAno.getText(),
+                    "Confirmar Reserva",
+                    JOptionPane.YES_NO_OPTION
+                );
+                if (confirmacao != JOptionPane.YES_OPTION) return;
+
                 String resposta = chamarServico(
                     BASE + "reserva?wsdl",
                     "RealizarReservaService",
@@ -424,106 +487,137 @@ public class Interface extends JFrame {
     // -------------------------------------------------------
     // PAINEL: RELATÓRIO ADMIN
     // -------------------------------------------------------
-    private JPanel criarPainelRelatorio() {
-        JPanel painel = new JPanel(new BorderLayout(10, 10));
-        painel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+private JPanel criarPainelRelatorio() {
+    JPanel painel = new JPanel(new BorderLayout(10, 10));
+    painel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel campos = new JPanel(new GridLayout(4, 4, 5, 5));
+    JPanel campos = new JPanel(new GridLayout(5, 4, 5, 5));
 
-        campos.add(new JLabel("Início (dia/mês/ano):"));
-        JTextField inicioDia = new JTextField();
-        JTextField inicioMes = new JTextField();
-        JTextField inicioAno = new JTextField();
-        campos.add(inicioDia);
-        campos.add(inicioMes);
-        campos.add(inicioAno);
+    campos.add(new JLabel("Início (dia/mês/ano):"));
+    JTextField inicioDia = new JTextField();
+    JTextField inicioMes = new JTextField();
+    JTextField inicioAno = new JTextField();
+    campos.add(inicioDia);
+    campos.add(inicioMes);
+    campos.add(inicioAno);
 
-        campos.add(new JLabel("Fim (dia/mês/ano):"));
-        JTextField fimDia = new JTextField();
-        JTextField fimMes = new JTextField();
-        JTextField fimAno = new JTextField();
-        campos.add(fimDia);
-        campos.add(fimMes);
-        campos.add(fimAno);
+    campos.add(new JLabel("Fim (dia/mês/ano):"));
+    JTextField fimDia = new JTextField();
+    JTextField fimMes = new JTextField();
+    JTextField fimAno = new JTextField();
+    campos.add(fimDia);
+    campos.add(fimMes);
+    campos.add(fimAno);
 
-        // Linha 3: botões
-        JButton btnPeriodo = new JButton("Buscar por Período");
-        JButton btnTodas   = new JButton("Todas até Hoje");
-        campos.add(btnPeriodo);
-        campos.add(btnTodas);
-        campos.add(new JLabel());
-        campos.add(new JLabel());
+    // Linha 3: filtro de status
+    campos.add(new JLabel("Filtrar por Status:"));
+    JComboBox<String> statusCombo = new JComboBox<>(new String[]{
+        "TODOS", "CONFIRMADA", "CANCELADA", "CONCLUIDA"
+    });
+    campos.add(statusCombo);
+    campos.add(new JLabel());
+    campos.add(new JLabel());
 
-        // Linha 4: legenda
-        campos.add(new JLabel("* 'Todas até Hoje' ignora as datas acima."));
-        campos.add(new JLabel());
-        campos.add(new JLabel());
-        campos.add(new JLabel());
+    // Linha 4: botões
+    JButton btnPeriodo = new JButton("Buscar por Período");
+    JButton btnTodas   = new JButton("Todas até Hoje");
+    campos.add(btnPeriodo);
+    campos.add(btnTodas);
+    campos.add(new JLabel());
+    campos.add(new JLabel());
 
-        // Preenche com a data atual
-        preencherDataAtual(inicioDia, inicioMes, inicioAno);
-        preencherDataAtual(fimDia, fimMes, fimAno);
+    // Linha 5: legenda
+    campos.add(new JLabel("* 'Todas até Hoje' ignora as datas acima."));
+    campos.add(new JLabel());
+    campos.add(new JLabel());
+    campos.add(new JLabel());
 
-        JTextArea resultado = new JTextArea(10, 50);
-        resultado.setEditable(false);
-        resultado.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane scroll = new JScrollPane(resultado);
+    preencherDataAtual(inicioDia, inicioMes, inicioAno);
+    preencherDataAtual(fimDia, fimMes, fimAno);
 
-            // Buscar por período
-        btnPeriodo.addActionListener(e -> {
-            String erroData = validarDatas(
-                inicioDia.getText(), inicioMes.getText(), inicioAno.getText(),
-                fimDia.getText(),    fimMes.getText(),    fimAno.getText()
+    JTextArea resultado = new JTextArea(10, 50);
+    resultado.setEditable(false);
+    resultado.setFont(new Font("Monospaced", Font.PLAIN, 12));
+    JScrollPane scroll = new JScrollPane(resultado);
+
+    // Buscar por período
+    btnPeriodo.addActionListener(e -> {
+        String erroData = validarDatas(
+            inicioDia.getText(), inicioMes.getText(), inicioAno.getText(),
+            fimDia.getText(),    fimMes.getText(),    fimAno.getText()
+        );
+        if (erroData != null) {
+            resultado.setText(erroData);
+            return;
+        }
+        int confirmacao = JOptionPane.showConfirmDialog(
+            null,
+            "Gerar relatório do período?\n\n" +
+            "De: "     + inicioDia.getText() + "/" + inicioMes.getText() + "/" + inicioAno.getText() + "\n" +
+            "Até: "    + fimDia.getText()    + "/" + fimMes.getText()    + "/" + fimAno.getText()    + "\n" +
+            "Status: " + statusCombo.getSelectedItem(),
+            "Confirmar Relatório",
+            JOptionPane.YES_NO_OPTION
+        );
+        if (confirmacao != JOptionPane.YES_OPTION) return;
+
+        resultado.setText("Carregando...");
+        new Thread(() -> {
+            try {
+                String resposta = chamarServico(
+                BASE + "relatorio?wsdl",
+                "RelatorioAdminService",
+                "gerarRelatorio",
+                new Object[]{
+                    Integer.parseInt(inicioDia.getText()),
+                    Integer.parseInt(inicioMes.getText()),
+                    Integer.parseInt(inicioAno.getText()),
+                    Integer.parseInt(fimDia.getText()),
+                    Integer.parseInt(fimMes.getText()),
+                    Integer.parseInt(fimAno.getText()),
+                    (String) statusCombo.getSelectedItem()
+                }
             );
-            if (erroData != null) {
-                resultado.setText(erroData);
-                return;
+                // Filtra por status no lado do cliente
+                String filtrado = filtrarPorStatus(resposta, (String) statusCombo.getSelectedItem());
+                SwingUtilities.invokeLater(() -> resultado.setText(filtrado));
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> resultado.setText("ERRO: " + ex.getMessage()));
             }
-            resultado.setText("Carregando...");
-            new Thread(() -> {
-                try {
-                    String resposta = chamarServico(
-                        BASE + "relatorio?wsdl",
-                        "RelatorioAdminService",
-                        "gerarRelatorio",
-                        new Object[]{
-                            Integer.parseInt(inicioDia.getText()),
-                            Integer.parseInt(inicioMes.getText()),
-                            Integer.parseInt(inicioAno.getText()),
-                            Integer.parseInt(fimDia.getText()),
-                            Integer.parseInt(fimMes.getText()),
-                            Integer.parseInt(fimAno.getText())
-                        }
-                    );
-                    SwingUtilities.invokeLater(() -> resultado.setText(resposta));
-                } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> resultado.setText("ERRO: " + ex.getMessage()));
-                }
-            }).start();
-        });
+        }).start();
+    });
 
-        // Buscar todas até hoje
-        btnTodas.addActionListener(e -> {
-            resultado.setText("Carregando...");
-            new Thread(() -> {
-                try {
-                    String resposta = chamarServico(
-                        BASE + "relatorio?wsdl",
-                        "RelatorioAdminService",
-                        "gerarRelatorioCompleto",
-                        new Object[]{}
-                    );
-                    SwingUtilities.invokeLater(() -> resultado.setText(resposta));
-                } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> resultado.setText("ERRO: " + ex.getMessage()));
-                }
-            }).start();
-        });
+    // Buscar todas até hoje
+    btnTodas.addActionListener(e -> {
+        int confirmacao = JOptionPane.showConfirmDialog(
+            null,
+            "Listar todas as reservas?\n\nStatus: " + statusCombo.getSelectedItem(),
+            "Confirmar Relatório Completo",
+            JOptionPane.YES_NO_OPTION
+        );
+        if (confirmacao != JOptionPane.YES_OPTION) return;
 
-        painel.add(campos, BorderLayout.NORTH);
-        painel.add(scroll, BorderLayout.CENTER);
-        return painel;
-    }
+        resultado.setText("Carregando...");
+        new Thread(() -> {
+            try {
+               String resposta = chamarServico(
+                BASE + "relatorio?wsdl",
+                "RelatorioAdminService",
+                "gerarRelatorioCompleto",
+                new Object[]{ (String) statusCombo.getSelectedItem() }
+            );
+                String filtrado = filtrarPorStatus(resposta, (String) statusCombo.getSelectedItem());
+                SwingUtilities.invokeLater(() -> resultado.setText(filtrado));
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> resultado.setText("ERRO: " + ex.getMessage()));
+            }
+        }).start();
+    });
+
+    painel.add(campos, BorderLayout.NORTH);
+    painel.add(scroll, BorderLayout.CENTER);
+    return painel;
+}
 
     // -------------------------------------------------------
     // PAINEL: CANCELAR RESERVA
@@ -568,6 +662,16 @@ public class Interface extends JFrame {
             }
             try {
                 long id = Long.parseLong(idReserva.getText());
+                int confirmacao = JOptionPane.showConfirmDialog(
+                    painel,
+                    "Confirmar cancelamento?\n\n" +
+                    "CPF: " + cpf.getText() + "\n" +
+                    "ID da Reserva: " + idReserva.getText(),
+                    "Confirmar Cancelamento",
+                    JOptionPane.YES_NO_OPTION
+                );
+                if (confirmacao != JOptionPane.YES_OPTION) return;
+
                 String resposta = chamarServico(
                     BASE + "cancelar?wsdl",
                     "CancelarReservaService",
@@ -650,11 +754,11 @@ public class Interface extends JFrame {
                                      "fimDia", "fimMes", "fimAno" };
             case "gerarRelatorio":
                 return new String[]{ "inicioDia", "inicioMes", "inicioAno",
-                                     "fimDia", "fimMes", "fimAno" };
+                                     "fimDia", "fimMes", "fimAno" , "status" };
             case "cancelarReserva":
                 return new String[]{ "cpf", "idReserva" };
             case "gerarRelatorioCompleto":
-                return new String[]{};
+                return new String[]{"status" };
             default:
                 return new String[]{};
         }
